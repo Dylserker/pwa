@@ -80,7 +80,17 @@ async function cacheFirst(request) {
 }
 
 self.addEventListener('message', (event) => {
-  if (event.data && event.data.type === 'SKIP_WAITING') self.skipWaiting();
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+    // if sender provided a MessageChannel port, reply so sender doesn't get "message port closed" errors
+    try {
+      if (event.ports && event.ports[0]) {
+        event.ports[0].postMessage({ ok: true });
+      }
+    } catch (e) {
+      // ignore — best effort reply
+    }
+  }
 });
 
 console.log('[SW] chargé');
