@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/pwa/',
+  base: '/',
   plugins: [react()],
   build: {
     // Build output to `docs` so GitHub Pages can serve from `main`/`docs`
