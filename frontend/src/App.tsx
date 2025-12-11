@@ -49,12 +49,39 @@ function App() {
   const [hourly, setHourly] = useState<any>(null)
 
   useEffect(() => {
-    if ('serviceWorker' in navigator) {
-      const swUrl = `${import.meta.env.BASE_URL}service-worker.js`
-      navigator.serviceWorker.register(swUrl).then(() => {
-        console.log('SW registered at', swUrl)
-      }).catch(console.error)
-    }
+    if (!('serviceWorker' in navigator)) return
+
+    const swUrl = `${import.meta.env.BASE_URL}service-worker.js`
+    navigator.serviceWorker.register(swUrl).then((reg) => {
+      console.log('SW registered at', swUrl)
+
+      // handle updates: when a new SW is installing, ask it to skipWaiting
+      reg.addEventListener('updatefound', () => {
+        const newWorker = reg.installing
+        if (!newWorker) return
+
+        newWorker.addEventListener('statechange', () => {
+          if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
+            // there's a waiting worker — ask it to skipWaiting and wait for confirmation
+            const channel = new MessageChannel()
+            channel.port1.onmessage = (event) => {
+              if (event?.data && event.data.ok) {
+                navigator.serviceWorker.addEventListener('controllerchange', () => {
+                  window.location.reload()
+                }, { once: true })
+              }
+            }
+
+            try {
+              newWorker.postMessage({ type: 'SKIP_WAITING' }, [channel.port2])
+            } catch (e) {
+              // fallback if posting the port is not supported
+              newWorker.postMessage({ type: 'SKIP_WAITING' })
+            }
+          }
+        })
+      })
+    }).catch(console.error)
   }, [])
 
   
